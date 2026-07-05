@@ -1,0 +1,24 @@
+# Keep the build context small and avoid copying host-specific / secret files.
+**/.venv
+**/venv
+**/__pycache__
+**/*.py[cod]
+**/*.egg-info
+
+# Never bake in local data or secrets (mounted/volumed at runtime instead)
+server/data/
+*.db
+*.db-wal
+*.db-shm
+**/.env
+
+# Firmware build junk (prebuilt *.bin ARE copied — do not ignore those)
+firmware/**/.pio/
+firmware/**/build/
+
+# VCS / editor / OS
+.git
+.gitignore
+.vscode/
+.idea/
+.DS_Store

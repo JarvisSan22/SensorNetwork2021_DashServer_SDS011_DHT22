@@ -1,0 +1,50 @@
+# SensorNet — Docker deployment.
+#
+#   cp server/.env.example server/.env      # set WiFi/server defaults (optional)
+#   docker compose up -d --build            # build + run in the background
+#   docker compose logs -f                  # watch logs
+#   docker compose pull ; up -d --build     # update: rebuild after `git pull`
+#
+# The SQLite DB lives in the named volume `sensornet-data`, kept SEPARATE from
+# the app image — so updating the code (rebuild) never touches your data.
+#   docker volume inspect sensornet_sensornet-data     # find it on disk
+#   docker run --rm -v sensornet_sensornet-data:/d -v "$PWD":/b busybox \
+#       cp /d/sensornet.db /b/backup.db                # back it up
+
+services:
+  sensornet:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    image: sensornet-server:latest
+    container_name: sensornet
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      # Optional — created from server/.env.example. required:false needs Compose 2.24+.
+      - path: ./server/.env
+        required: false
+    volumes:
+      - sensornet-data:/data          # <-- your data, on a separate volume
+      - ./firmware:/app/firmware      # live firmware images for the flash wizard
+
+    # --- USB flashing (this box flashes ESP32s over USB) ----------------------
+    # Docker can't hot-plug USB cleanly, so enable ONE of the options below when
+    # you need to flash, then `docker compose up -d`. (Native/systemd is smoother
+    # for flashing — see Docs/DEPLOYMENT.md.)
+    #
+    # A) Map a specific adapter (must be plugged in at container start):
+    # group_add: [dialout]
+    # devices:
+    #   - "/dev/ttyUSB0:/dev/ttyUSB0"
+    #
+    # B) Handle dynamic/unknown ports (simplest, but broad privileges):
+    # privileged: true
+    # volumes:
+    #   - sensornet-data:/data
+    #   - ./firmware:/app/firmware
+    #   - /dev:/dev
+
+volumes:
+  sensornet-data:

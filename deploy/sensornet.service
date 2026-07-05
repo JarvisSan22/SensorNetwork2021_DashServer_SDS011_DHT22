@@ -1,0 +1,20 @@
+[Unit]
+Description=SensorNet home sensor server (ingest + dashboard + weather)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# __PLACEHOLDERS__ are filled in by deploy/install-native.sh.
+User=__USER__
+Group=__USER__
+WorkingDirectory=__SERVER_DIR__
+EnvironmentFile=-__SERVER_DIR__/.env
+ExecStart=__VENV__/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+Restart=on-failure
+RestartSec=3
+# Serial access for the ESP32 flashing wizard (native = direct, no passthrough).
+SupplementaryGroups=dialout
+
+[Install]
+WantedBy=multi-user.target

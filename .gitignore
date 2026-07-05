@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Local secrets / per-host config (WiFi creds, server URL) — never commit
+.env
+
+# App data (SQLite DB lives here; never commit live data)
+server/data/
+*.db
+*.db-wal
+*.db-shm
+
+# PlatformIO / firmware build artifacts
+firmware/**/.pio/
+firmware/**/build/
+firmware/prebuilt/*.bin
+
+# Editor / OS
+.vscode/
+.idea/
+.spyproject/
+.DS_Store
