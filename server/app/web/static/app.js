@@ -38,12 +38,23 @@ async function weatherTrace(metric, since, until) {
   } catch (e) { return null; }
   if (!data.points || !data.points.length) return null;
   return {
-    x: data.points.map((p) => p.ts),
+    x: data.points.map((p) => toLocalTs(p.ts)),
     y: data.points.map((p) => p.value),
     mode: "lines",
     name: "☁️ Weather",
     line: { color: WEATHER_COLOR, width: 2, dash: "dot" },
   };
+}
+
+// Backend timestamps are naive UTC (no offset). Plotly plots datetime values
+// literally (no timezone conversion), so convert each to local wall-clock before
+// charting — otherwise points render offset by the browser's UTC offset
+// (e.g. 06:55 instead of 15:55 in JST).
+function toLocalTs(iso) {
+  if (!iso) return iso;
+  const d = new Date(iso.endsWith("Z") ? iso : iso + "Z");
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+    .toISOString().slice(0, 19).replace("T", " ");
 }
 
 function timeAgo(iso) {
@@ -201,7 +212,7 @@ async function refreshChart() {
 
   const meta = METRIC_META[metric] || { label: metric, unit: "" };
   const traces = series.map((s) => ({
-    x: s.points.map((p) => p.ts),
+    x: s.points.map((p) => toLocalTs(p.ts)),
     y: s.points.map((p) => p.value),
     mode: "lines",
     name: s.name,
@@ -239,7 +250,7 @@ async function liveChart(divId, metric, title, unit, since, showWeather) {
   } catch (e) { return; }
 
   const traces = (data.series || []).map((s) => ({
-    x: s.points.map((p) => p.ts),
+    x: s.points.map((p) => toLocalTs(p.ts)),
     y: s.points.map((p) => p.value),
     mode: "lines",
     name: s.name,
@@ -492,15 +503,16 @@ async function monitorSerial() {
     status.textContent = "No device";
     return;
   }
+  const baud = parseInt(document.getElementById("serial-baud").value, 10) || 115200;
   btn.disabled = true;
   status.textContent = "Reading serial…";
   log.classList.remove("hidden");
-  log.textContent = "Listening on " + port + " …";
+  log.textContent = "Listening on " + port + " @ " + baud + " baud …";
   try {
     const res = await fetch("/api/flash/monitor", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ port, seconds: 15 }),
+      body: JSON.stringify({ port, seconds: 15, baud }),
     });
     const data = await res.json();
     log.textContent = data.log || data.error || "(no output)";

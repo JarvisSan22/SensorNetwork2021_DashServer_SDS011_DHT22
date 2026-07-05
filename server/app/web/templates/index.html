@@ -55,6 +55,14 @@
           <label>Firmware <select id="flash-variant"></select></label>
         </div>
         <div class="ctl-group right">
+          <label>Baud
+            <select id="serial-baud">
+              <option value="115200">115200 (firmware)</option>
+              <option value="74880">74880 (ESP8266 boot)</option>
+              <option value="9600">9600</option>
+              <option value="57600">57600</option>
+            </select>
+          </label>
           <button type="button" id="serial-btn" class="btn-ghost">Show serial</button>
           <button type="button" id="flash-btn" disabled>Flash &amp; configure</button>
         </div>

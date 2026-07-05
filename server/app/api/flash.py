@@ -75,12 +75,14 @@ class FlashRequest(BaseModel):
 class MonitorRequest(BaseModel):
     port: str
     seconds: int = 15
+    # 115200 = firmware output; 74880 = ESP8266 boot-ROM banner / reset reason.
+    baud: int = 115200
 
 
 @router.post("/monitor")
 def monitor(req: MonitorRequest) -> dict:
     """Capture serial output from a connected node so the UI can show it live-ish."""
-    return flasher.read_serial(req.port, seconds=min(max(req.seconds, 1), 60))
+    return flasher.read_serial(req.port, baud=req.baud, seconds=min(max(req.seconds, 1), 60))
 
 
 @router.post("")

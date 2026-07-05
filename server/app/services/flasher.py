@@ -1,8 +1,10 @@
-"""Server-side ESP32 flashing via esptool.
+"""Server-side ESP32 / ESP8266 flashing via esptool.
 
-Lists USB serial ports and writes a prebuilt merged firmware image to a
-plugged-in board. Provisioning (WiFi/server/name) happens afterwards on the
-device's captive portal, so flashing only needs to write the binary.
+Lists USB serial ports and writes a prebuilt firmware image to a plugged-in
+board. The target chip is inferred from the image name (see `chip_for`), so both
+`combo_node` (ESP32) and `combo_node_esp8266` flash through the same path.
+Provisioning (WiFi/server/name) happens afterwards over serial (or the device's
+captive portal), so flashing only needs to write the binary.
 """
 
 from __future__ import annotations
@@ -54,6 +56,16 @@ def firmware_path(variant: str) -> Path:
     return PREBUILT_DIR / f"{variant}.bin"
 
 
+def chip_for(variant: str) -> str:
+    """Which esptool chip a prebuilt image targets, inferred from its name.
+
+    `combo_node_esp8266` -> esp8266; everything else -> esp32. Passing the chip
+    explicitly (rather than auto-detecting) makes esptool refuse to write an
+    ESP8266 image to an ESP32 board and vice-versa, instead of bricking it.
+    """
+    return "esp8266" if variant.endswith("esp8266") else "esp32"
+
+
 def flash(port: str, variant: str, baud: int = 460800, timeout: int = 180) -> dict:
     """Write a merged firmware image to `port`. Returns success + esptool log."""
     fw = firmware_path(variant)
@@ -66,7 +78,7 @@ def flash(port: str, variant: str, baud: int = 460800, timeout: int = 180) -> di
 
     cmd = [
         sys.executable, "-m", "esptool",
-        "--chip", "esp32", "--port", port, "--baud", str(baud),
+        "--chip", chip_for(variant), "--port", port, "--baud", str(baud),
         "write-flash", "0x0", str(fw),
     ]
     try:
