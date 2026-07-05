@@ -18,19 +18,27 @@ from ..services import flasher
 router = APIRouter(prefix="/api/flash", tags=["flash"])
 
 # Wiring shown by the dashboard "Show pin setup" modal — must match the firmware.
+# Rows are [pin, esp32] for wiring that's the same on both boards, or
+# [pin, esp32, esp8266] where the GPIO differs (the ESP8266 uses NodeMCU D-pins,
+# so "GPIO 4" on an ESP32 is NOT the "D4" silkscreen on a NodeMCU).
 PIN_SETUP = {
     "dht": {
         "name": "DHT22 (temperature + humidity)",
-        "pins": [["VCC", "3V3"], ["GND", "GND"], ["DATA", "GPIO 4"],
+        "pins": [["VCC", "3V3"], ["GND", "GND"],
+                 ["DATA", "GPIO 4", "GPIO 14 (D5)"],
                  ["pull-up", "10kΩ between DATA and VCC"]],
     },
     "pms": {
         "name": "PMS5003 (PM2.5 + PM10)",
-        "pins": [["VCC", "5V"], ["GND", "GND"], ["TX", "GPIO 16 (RX2)"], ["RX", "GPIO 17 (TX2)"]],
+        "pins": [["VCC", "5V"], ["GND", "GND"],
+                 ["TX", "GPIO 16 (RX2)", "GPIO 12 (D6)"],
+                 ["RX", "GPIO 17 (TX2)", "GPIO 13 (D7)"]],
     },
     "bmp": {
         "name": "BMP280 (pressure)",
-        "pins": [["VCC", "3V3"], ["GND", "GND"], ["SDA", "GPIO 21"], ["SCL", "GPIO 22"],
+        "pins": [["VCC", "3V3"], ["GND", "GND"],
+                 ["SDA", "GPIO 21", "GPIO 4 (D2)"],
+                 ["SCL", "GPIO 22", "GPIO 5 (D1)"],
                  ["I2C addr", "0x76"]],
     },
 }

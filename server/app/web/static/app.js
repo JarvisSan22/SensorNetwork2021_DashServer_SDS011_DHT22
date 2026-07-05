@@ -533,9 +533,13 @@ async function showPins() {
   const body = document.getElementById("pin-body");
   const sections = Object.entries(PIN_SETUP)
     .filter(([key]) => s[key])
-    .map(([key, info]) => `<div class="pin-sensor"><h4>${info.name}</h4><table>${
-      info.pins.map((row) => `<tr><td>${row[0]}</td><td>${row[1]}</td></tr>`).join("")
-    }</table></div>`);
+    .map(([key, info]) => `<div class="pin-sensor"><h4>${info.name}</h4><table>` +
+      `<tr class="pin-head"><th>Pin</th><th>ESP32</th><th>ESP8266</th></tr>` +
+      info.pins.map((row) => row.length > 2
+        ? `<tr><td>${row[0]}</td><td>${row[1]}</td><td>${row[2]}</td></tr>`
+        : `<tr><td>${row[0]}</td><td colspan="2">${row[1]}</td></tr>`
+      ).join("") +
+      `</table></div>`);
   body.innerHTML = sections.length ? sections.join("") : `<p class="muted">Enable a sensor above to see its wiring.</p>`;
   document.getElementById("pin-modal").classList.remove("hidden");
 }
