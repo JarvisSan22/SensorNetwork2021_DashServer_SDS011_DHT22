@@ -1,12 +1,30 @@
 "use strict";
 
+// y-axis hints: ymin/ymax pin an end; ypad = headroom above the data's max.
+//   humidity -> fixed 0..100;  temp & PM -> 0..(max+pad);  pressure -> auto
+// (pressure sits ~1000 hPa, so a zero-based axis would flatten it).
 const METRIC_META = {
-  temperature_c: { label: "Temp", unit: "°C", fixed: 1 },
-  humidity_pct:  { label: "Humidity", unit: "%", fixed: 0 },
-  pm25:          { label: "PM2.5", unit: "µg/m³", fixed: 0 },
-  pm10:          { label: "PM10", unit: "µg/m³", fixed: 0 },
+  temperature_c: { label: "Temp", unit: "°C", fixed: 1, ymin: 0, ypad: 5 },
+  humidity_pct:  { label: "Humidity", unit: "%", fixed: 0, ymin: 0, ymax: 100 },
+  pm25:          { label: "PM2.5", unit: "µg/m³", fixed: 0, ymin: 0, ypad: 5 },
+  pm10:          { label: "PM10", unit: "µg/m³", fixed: 0, ymin: 0, ypad: 5 },
   pressure_hpa:  { label: "Pressure", unit: "hPa", fixed: 0 },
 };
+
+// Compute an explicit [min, max] for a metric's y-axis, or null for autorange.
+function yRange(meta, traces) {
+  if (!meta) return null;
+  if (meta.ymin != null && meta.ymax != null) return [meta.ymin, meta.ymax];
+  if (meta.ymin != null && meta.ypad != null) {
+    let dmax = -Infinity;
+    traces.forEach((t) => (t.y || []).forEach((v) => {
+      if (v != null && isFinite(v) && v > dmax) dmax = v;
+    }));
+    if (!isFinite(dmax)) return null;          // no data yet -> let Plotly autorange
+    return [meta.ymin, dmax + meta.ypad];
+  }
+  return null;                                  // e.g. pressure -> autorange
+}
 
 // Stable per-node colour so a node is the same colour in BOTH live charts
 // (and stays put across refreshes). Assigned on first sighting, by node id.
@@ -229,13 +247,14 @@ async function refreshChart() {
     ? `${total} pts${tierName ? ` · ${tierName}` : ""}`
     : "no data in range";
 
+  const yr = yRange(meta, traces);
   Plotly.react("chart", traces, {
     margin: { l: 50, r: 20, t: 20, b: 40 },
     paper_bgcolor: "transparent",
     plot_bgcolor: "transparent",
     font: { color: "#8b98a5" },
     xaxis: { gridcolor: "#2b3540" },
-    yaxis: { title: `${meta.label} (${meta.unit})`, gridcolor: "#2b3540" },
+    yaxis: { title: `${meta.label} (${meta.unit})`, gridcolor: "#2b3540", ...(yr ? { range: yr } : {}) },
     showlegend: traces.length > 1,
     legend: { orientation: "h", y: 1.12, font: { size: 11 } },
   }, { responsive: true, displayModeBar: false });
@@ -262,6 +281,7 @@ async function liveChart(divId, metric, title, unit, since, showWeather) {
     if (wt) traces.push(wt);
   }
 
+  const yr = yRange(METRIC_META[metric], traces);
   Plotly.react(divId, traces, {
     margin: { l: 48, r: 16, t: 34, b: 40 },
     title: { text: title, font: { size: 13, color: "#c8d2dc" }, x: 0, xanchor: "left" },
@@ -269,7 +289,7 @@ async function liveChart(divId, metric, title, unit, since, showWeather) {
     plot_bgcolor: "transparent",
     font: { color: "#8b98a5" },
     xaxis: { gridcolor: "#2b3540" },
-    yaxis: { title: unit, gridcolor: "#2b3540" },
+    yaxis: { title: unit, gridcolor: "#2b3540", ...(yr ? { range: yr } : {}) },
     showlegend: false,   // a single shared legend covers both plots instead
   }, { responsive: true, displayModeBar: false });
 
